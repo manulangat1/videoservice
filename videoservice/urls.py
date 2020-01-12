@@ -5,8 +5,10 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('',include('courses.urls',namespace="courses")),
+    
+    path('memberships/',include('memberships.urls',namespace="memberships")),
     path('admin/', admin.site.urls),
+    path('',include('courses.urls',namespace="courses")),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL,document_root=settings.STATIC_ROOT)
