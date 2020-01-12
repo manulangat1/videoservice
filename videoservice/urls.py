@@ -5,11 +5,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    
+    path('mpesa/',include('mpesa.urls',namespace="mpesa")),
     path('memberships/',include('memberships.urls',namespace="memberships")),
     path('admin/', admin.site.urls),
     path('',include('courses.urls',namespace="courses")),
-    path('mpesa/',include('mpesa.urls',namespace="mpesa")),
+    
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL,document_root=settings.STATIC_ROOT)

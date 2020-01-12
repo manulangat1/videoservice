@@ -1,8 +1,11 @@
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse,JsonResponse
 import requests
 from requests.auth import HTTPBasicAuth
 import json
+from .mpesa_credentials import MpesaAccessToken,LipanaMpesaPpassword
+from .models import MpesaPayment
+from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 
 def getAccessToken(request):
@@ -13,3 +16,69 @@ def getAccessToken(request):
     mpesa_access_token = json.loads(r.text)
     validated_mpesa_access_token = mpesa_access_token['access_token']
     return HttpResponse(validated_mpesa_access_token)
+def lipa_na_mpesa_online(request):
+    access_token = MpesaAccessToken.validated_mpesa_access_token
+    api_URL = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
+    headers = {"Authorization":"Bearer %s" % access_token}
+    request = {
+        "BusinessShortCode":LipanaMpesaPpassword.Business_short_code,
+        "Password": LipanaMpesaPpassword.decode_password,
+        "Timestamp":LipanaMpesaPpassword.lipa_time,
+        "TransactionType":"CustomerPayBillOnline",
+        "Amount":3,
+        "PartyA": 254740415950,
+        "PartyB":LipanaMpesaPpassword.Business_short_code,
+        "PhoneNumber":254740415950,
+        "CallBackURL":"https://sandbox.safaricom.co.ke/mpesa/",
+        "AccountReference":"Manu",
+        "TransactionDesc":"Testing stk push"
+    }
+    response = requests.post(api_URL,json=request,headers=headers)
+    return HttpResponse('success')
+
+@csrf_exempt
+def register_urls(request):
+    access_token = MpesaAccessToken.validated_mpesa_access_token
+    api_url = "https://sandbox.safaricom.co.ke/mpesa/c2b/v1/registerurl"
+    headers = {"Authorization":"Bearer %s" % access_token}
+    options = {
+        "ShortCode":LipanaMpesaPpassword.Test_c2b_shortcode,
+        "ResponseType":"Completed",
+        "ConfirmationURL":"https://fbc8a104.ngrok.io",
+        "ValidationURL":"https://fbc8a104.ngrok.io"
+    }
+    response = requests.post(api_url,json=options,headers=headers)
+    return HttpResponse(response.text)
+@csrf_exempt
+def call_back(request):
+    pass
+
+@csrf_exempt
+def validation(request):
+    context = {
+        "ResultCode":0,
+        "ResultDesc":"Accepted"
+    }
+    return JsonResponse(dict(context))
+@csrf_exempt
+def confirmation(request):
+    mpesa_body = request.body.decode('utf-8')
+    mpesa_payment = json.loads(mpesa_body)
+
+    payment = MpesaPayment(
+        first_name = mpesa_payment['FirstName'],
+        last_name = mpesa_payment['LastName'],
+        middle_name = mpesa_payment['MiddleName'],
+        description = mpesa_payment['TransID'],
+        phone_number = mpesa_payment['MSISDN'],
+        amount = mpesa_payment['TransAmount'],
+        reference = mpesa_payment['BillRefNumber'],
+        organization_balance = mpesa_payment['OrgAccountBalance'],
+        type=mpesa_payment['TransactionType'],
+    )
+    payment.save()
+    context = {
+        "ResultCode":0,
+        "ResultDesc":"Accepted"
+    }
+    return JsonResponse(dict(context))
