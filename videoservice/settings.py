@@ -22,7 +22,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'courses.apps.CoursesConfig',
-    'memberships.apps.MembershipsConfig'
+    'memberships.apps.MembershipsConfig',
+    'mpesa.apps.MpesaConfig',
 ]
 
 MIDDLEWARE = [
